@@ -17,21 +17,20 @@ builder.Services.AddAuthentication()
         o.ClientId = "id";
         o.ClientSecret = "secret";
 
-        o.AuthorizationEndpoint = "https://oauth.mocklab.io/oauth/authorize";
-        o.TokenEndpoint = "https://oauth.mocklab.io/oauth.token";
-        o.UserInformationEndpoint = "https://oauth.mocklab.io/userinfo";
+        o.AuthorizationEndpoint = "https://oauth.wiremockapi.cloud/oauth/authorize";
+        o.TokenEndpoint = "https://oauth.wiremockapi.cloud/oauth/token";
+        o.UserInformationEndpoint = "https://oauth.wiremockapi.cloud/userinfo";
 
         o.CallbackPath = "/cb-patreon";
 
         o.Scope.Add("profile");
         o.SaveTokens = true;
     });
-
 builder.Services.AddAuthorization(b =>
 {
     b.AddPolicy("customer", p =>
     {
-        p.AddAuthenticationSchemes("local", "visitor")
+        p.AddAuthenticationSchemes("patreon-cookie", "local", "visitor")
             .RequireAuthenticatedUser();
     });
     b.AddPolicy("user", p =>
@@ -58,15 +57,10 @@ var user = new ClaimsPrincipal(identity);
 await ctx.SignInAsync("local", user);
 });
 
-app.MapGet("/login-patreon", async (ctx) =>
+app.MapGet("/login-patreon", async (ctx) => await ctx.ChallengeAsync("external-patreon", new AuthenticationProperties()
 {
-var claims = new List<Claim>();
-claims.Add(new Claim("usr", "anton"));
-var identity = new ClaimsIdentity(claims, "local");
-var user = new ClaimsPrincipal(identity);
-
-await ctx.SignInAsync("local", user);
-}).RequireAuthorization("user");
+    RedirectUri = "/"
+})).RequireAuthorization("user");
 
 app.Run();
 
